@@ -2,38 +2,12 @@ import fs from 'node:fs/promises'
 import http from 'node:http'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
+import artTemplate from 'art-template'
 import { normalizeList } from '../models/normalize.js'
 import { buildViewModel } from '../services/RankService.js'
 import { resolveQuery, describeQuery, queryRank } from '../services/QueryService.js'
 import { withCharacterAvatars } from '../components/Render.js'
 import { loadConfig } from '../components/Config.js'
-
-function escapeHtml (s) {
-  return String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-function render (tpl, ctx) {
-  let out = tpl.replace(/\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_, key, inner) => {
-    const val = ctx[key]
-    if (!Array.isArray(val) || val.length === 0) return ''
-    return val.map(item => {
-      const subCtx = typeof item === 'object' && item !== null ? { ...ctx, ...item, '.': item } : { ...ctx, '.': item }
-      return render(inner, subCtx)
-    }).join('')
-  })
-
-  out = out.replace(/\{\{\^(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_, key, inner) => {
-    const val = ctx[key]
-    return (!val || (Array.isArray(val) && val.length === 0)) ? render(inner, ctx) : ''
-  })
-
-  return out.replace(/\{\{(\.|\w+)\}\}/g, (_, key) => escapeHtml(ctx[key]))
-}
 
 const { values } = parseArgs({
   options: {
@@ -104,7 +78,7 @@ const server = http.createServer(async (req, res) => {
     }
     const template = await fs.readFile(templateUrl, 'utf8')
     const viewModel = withCharacterAvatars(buildViewModel({ rankResult, ...describeQuery(opts), meta, stale: false }), '/avatars/')
-    const html = render(template, viewModel)
+    const html = artTemplate.render(template, viewModel)
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' })
     res.end(req.method === 'HEAD' ? undefined : html)
   } catch (err) {

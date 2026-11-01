@@ -104,30 +104,30 @@
     <div class="stale">{{staleLabel}}</div>
     <div class="list-heading"><span>排名</span><span>出战阵容 / 命座</span><span>输出DPS</span><span>配置成本</span><div class="status status-heading"><span>宏/绿</span><span>命星</span></div></div>
     <section class="ranking">
-      {{#rows}}
-      <article class="row {{rowClass}}">
-        <div class="rank">{{rankLabel}}</div>
+      {{each rows row}}
+      <article class="row {{row.rowClass}}">
+        <div class="rank">{{row.rankLabel}}</div>
         <div class="members">
-          {{#members}}
-          <div class="member {{highlightClass}}" title="{{name}} {{consLabel}}">
+          {{each row.members member}}
+          <div class="member {{member.highlightClass}}" title="{{member.name}} {{member.consLabel}}">
             <div class="portrait">
-              <span class="portrait-fallback">{{initial}}</span>
-              <img class="avatar" src="{{avatarUrl}}" alt="{{name}}" onerror="this.style.visibility='hidden'">
-              <span class="cons">{{consLabel}}</span>
+              <span class="portrait-fallback">{{member.initial}}</span>
+              <img class="avatar" src="{{member.avatarUrl}}" alt="{{member.name}}" onerror="this.style.visibility='hidden'">
+              <span class="cons">{{member.consLabel}}</span>
             </div>
-            <div class="member-name">{{name}}</div>
+            <div class="member-name">{{member.name}}</div>
           </div>
-          {{/members}}
+          {{/each}}
         </div>
         <div class="damage-col">
-          <div class="damage">{{damageLabel}}</div>
-          <div class="damage-track"><div class="damage-fill" style="width: {{damagePercent}}%"></div></div>
+          <div class="damage">{{row.damageLabel}}</div>
+          <div class="damage-track"><div class="damage-fill" style="width: {{row.damagePercent}}%"></div></div>
         </div>
-        <div class="cost" title="{{costLabel}}">{{costMainLabel}}<span class="cost-detail">{{costDetailLabel}}</span></div>
-        <div class="status">{{#statusBadges}}<span class="stamp {{className}} {{visibilityClass}}" title="{{title}}">{{label}}</span>{{/statusBadges}}</div>
+        <div class="cost" title="{{row.costLabel}}">{{row.costMainLabel}}<span class="cost-detail">{{row.costDetailLabel}}</span></div>
+        <div class="status">{{each row.statusBadges badge}}<span class="stamp {{badge.className}} {{badge.visibilityClass}}" title="{{badge.title}}">{{badge.label}}</span>{{/each}}</div>
       </article>
-      {{/rows}}
-      {{^rows}}<div class="empty">暂无符合条件的记录，试试调整查询条件</div>{{/rows}}
+      {{/each}}
+      {{if !rows.length}}<div class="empty">暂无符合条件的记录，试试调整查询条件</div>{{/if}}
     </section>
     <footer class="footer">
       <div><div>{{footer}}</div><div>更新 {{fetchedAtLabel}}</div></div>
