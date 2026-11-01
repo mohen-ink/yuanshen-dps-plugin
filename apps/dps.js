@@ -1,8 +1,8 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { getTeams } from '../services/TeamsService.js'
 import { buildViewModel } from '../services/RankService.js'
-import { QUERY_RULE, buildHelpText, resolveQuery, describeQuery, queryRank } from '../services/QueryService.js'
-import { renderRankImage } from '../components/Render.js'
+import { QUERY_RULE, buildHelpViewModel, resolveQuery, describeQuery, queryRank } from '../services/QueryService.js'
+import { renderRankImage, renderHelpImage } from '../components/Render.js'
 import { loadConfig } from '../components/Config.js'
 
 export default class Dps extends plugin {
@@ -21,7 +21,12 @@ export default class Dps extends plugin {
   }
 
   async help (e) {
-    await e.reply(buildHelpText(await loadConfig()))
+    try {
+      const cfg = await loadConfig()
+      await renderHelpImage(e, buildHelpViewModel(cfg))
+    } catch (err) {
+      await e.reply(`帮助图片渲染失败：${err.message}`)
+    }
     return true
   }
 

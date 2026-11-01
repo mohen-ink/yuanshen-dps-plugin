@@ -14,9 +14,21 @@ export function withCharacterAvatars (viewModel, avatarBaseUrl = characterBaseUr
   }
 }
 
-export async function renderRankImage (e, viewModel) {
+async function renderImage (e, template, viewModel) {
   if (typeof e?.runtime?.render !== 'function') {
-    throw new Error('当前云崽缺少图片渲染接口（e.runtime.render），无法生成榜单图片')
+    throw new Error('当前云崽缺少图片渲染接口（e.runtime.render），无法生成图片')
   }
-  return await e.runtime.render('yuanshen-dps-plugin', 'dps/index', withCharacterAvatars(viewModel))
+  return await e.runtime.render('yuanshen-dps-plugin', template, {
+    ...viewModel,
+    imgType: 'png',
+    renderScale: 2
+  })
+}
+
+export async function renderRankImage (e, viewModel) {
+  return await renderImage(e, 'dps/index', withCharacterAvatars(viewModel))
+}
+
+export async function renderHelpImage (e, viewModel) {
+  return await renderImage(e, 'dps/help', viewModel)
 }

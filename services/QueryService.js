@@ -4,26 +4,56 @@ const SAFE_NAME_RE = /^(?=.*\p{L})[\p{L}\p{N}·]{1,20}$/u
 
 export const QUERY_RULE = '^#[dD][pP][sS](?:榜|主[cC]|绿玩|全部)?(?:\\s+[\\s\\S]*)?\\s*$'
 
+export function buildHelpViewModel (cfg) {
+  const examplePageSize = Math.min(20, cfg.maxTopN)
+  return {
+    title: '原神 DPS 使用帮助',
+    subtitle: '榜单查询 · 条件筛选 · 分页与去重',
+    usage: '#dps [角色] [主c] [命座] [筛选] [数量/分页]',
+    defaultsLabel: `默认不去重 · ${cfg.includeMacroByDefault ? '包含宏' : '排除宏'} · 每页 ${cfg.defaultTopN} 条 · 单页最多 ${cfg.maxTopN} 条`,
+    sections: [
+      {
+        title: '查询示例',
+        commands: [
+          { command: '#dps', description: '查看全角色队伍榜单' },
+          { command: '#dps 玛薇卡', description: '查看包含该角色的队伍' },
+          { command: '#dps 玛薇卡 主c 6命', description: '该角色为主C，且恰好6命' },
+          { command: '#dps 玛薇卡 >=2命', description: '该角色至少2命，也支持 ≥' },
+          { command: '#dps 玛薇卡 <=2命 无宏', description: '该角色至多2命，并排除宏' },
+          { command: '#dps 绿玩 命星', description: '同时满足绿玩与命星标记' },
+          { command: `#dps ${examplePageSize}条 第2页`, description: `每页${examplePageSize}条，查看第${examplePageSize + 1}–${examplePageSize * 2}名` },
+          { command: '#dps 玛薇卡 去重', description: '相同阵容与命座只保留最高成绩' }
+        ]
+      },
+      {
+        title: '操作指令',
+        commands: [
+          { command: '#dps帮助', description: '查看本帮助图片' },
+          { command: '#dps刷新', description: '强制刷新榜单缓存，仅限机器人主人' }
+        ]
+      }
+    ],
+    notes: [
+      '筛选支持：绿玩 / 无宏 / 仅宏 / 命星，可组合使用，参数顺序不限。',
+      '去重按同四人及各自命座合并，忽略顺序；也支持显式「不去重」。',
+      '角色请使用完整名称；主C按队伍首位角色判断。',
+      '每页条数为展示上限，数据不足时只显示实际条数。',
+      '红圈宏 / 绿圈绿共用一列，紫圈命星独立显示；无绿标不代表绿玩。',
+      '兼容：#dps榜 [N]、#dps主c 角色、#dps绿玩 [角色]、#dps全部'
+    ],
+    footer: '数据来源：mhydps.cn · 仅供参考'
+  }
+}
+
 export function buildHelpText (cfg) {
+  const help = buildHelpViewModel(cfg)
   return [
-    '原神 DPS 榜 · 数据：mhydps.cn',
-    '#dps [角色] [主c] [命座] [筛选] [数量/分页]',
-    '#dps                         全角色榜单',
-    '#dps 玛薇卡                  包含该角色的队伍',
-    '#dps 玛薇卡 主c 6命          该角色主C、恰好6命',
-    '#dps 玛薇卡 >=2命            该角色至少2命（也支持 ≥）',
-    '#dps 玛薇卡 <=2命 无宏       该角色至多2命、排除宏',
-    '#dps 绿玩 命星               同时满足绿玩和命星',
-    '#dps 20条 第2页              每页20条，查看第21–40名',
-    '#dps 玛薇卡 去重             相同阵容及命座只保留最高成绩',
-    '筛选：绿玩 / 无宏 / 仅宏 / 命星，可组合，顺序不限。',
-    `默认不去重、${cfg.includeMacroByDefault ? '包含宏' : '排除宏'}，每页${cfg.defaultTopN}条，单页最多${cfg.maxTopN}条。`,
-    '加「去重」时按同四人及各自命座合并，忽略顺序，保留最高成绩；也支持显式「不去重」。',
-    '角色请使用完整名称；主C按队伍首位角色判断。',
-    '红圈宏 / 绿圈绿共用一列，紫圈命星独立显示。',
-    '兼容：#dps榜 [N]、#dps主c 角色、#dps绿玩 [角色]、#dps全部',
-    '#dps帮助                     查看帮助',
-    '#dps刷新                     主人：强制刷新缓存'
+    help.title,
+    help.usage,
+    help.defaultsLabel,
+    ...help.sections.flatMap(section => [section.title, ...section.commands.map(item => `${item.command}  ${item.description}`)]),
+    ...help.notes,
+    help.footer
   ].join('\n')
 }
 

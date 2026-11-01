@@ -8,6 +8,7 @@
     * { box-sizing: border-box; }
     body {
       width: 640px;
+      zoom: {{renderScale || 2}};
       margin: 0;
       padding: 16px;
       color: #253e3d;
@@ -80,6 +81,7 @@
     .stale:empty { display: none; }
     .empty { padding: 40px 16px; border: 1px dashed #d4ddce; border-radius: 9px; color: #899985; text-align: center; font-size: 13px; }
     .footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #dce3d7; color: #91a08e; font-size: 9px; line-height: 1.7; }
+    .signature { margin-top: 10px; color: #6e8178; font-size: 10px; font-weight: 600; line-height: 1.7; letter-spacing: .3px; text-align: center; }
     .legend { display: flex; align-items: center; gap: 5px; color: #83917f; font-size: 9px; }
     .legend .stamp { width: 18px; height: 18px; border-width: 1.5px; font-size: 11px; }
     .legend .stamp.lvl { font-size: 7px; }
@@ -133,6 +135,7 @@
       <div><div>{{footer}}</div><div>更新 {{fetchedAtLabel}}</div></div>
       <div class="legend"><span class="stamp macro">宏</span><span>宏</span><span class="stamp clean">绿</span><span>绿玩</span><span class="stamp lvl">命星</span><span>命星 · 无绿标不代表绿玩</span></div>
     </footer>
+    <div class="signature">yuanshen-dps-plugin · 作者 mohen</div>
   </main>
 </body>
 </html>

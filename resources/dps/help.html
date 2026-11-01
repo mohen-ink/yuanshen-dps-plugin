@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { width: 640px; zoom: {{renderScale || 2}}; margin: 0; padding: 16px; color: #253e3d; background: #e9eeea; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; -webkit-font-smoothing: antialiased; }
+    .board { overflow: hidden; padding: 20px 16px 16px; border: 1px solid #fff; border-radius: 18px; background: radial-gradient(ellipse at 100% 0, #e3eadd 0, transparent 35%), #f9faf5; box-shadow: 0 10px 30px #203e3612; }
+    .masthead { display: flex; align-items: center; gap: 7px; margin-bottom: 12px; }
+    .brand-icon { flex-shrink: 0; width: 18px; height: 18px; color: #9a8146; }
+    .eyebrow { color: #61786d; font-size: 8px; font-weight: 700; letter-spacing: 1.5px; }
+    .edition { margin-left: auto; color: #8a9487; font-size: 9px; }
+    .header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .title { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 1px; line-height: 1.3; }
+    .subtitle { margin-top: 5px; color: #6e8178; font-size: 11px; line-height: 1.5; }
+    .seal { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 42px; height: 42px; margin-right: 4px; border: 1px solid #b5b996; outline: 1px solid #cbd0b7; outline-offset: 3px; border-radius: 50%; color: #8b794a; font: italic 12px Georgia, serif; }
+    .usage { margin-top: 18px; padding: 12px 14px; border: 1px solid #dce3d7; border-radius: 9px; background: #edf2e8; }
+    .usage-label { margin-bottom: 7px; color: #809086; font-size: 10px; }
+    .usage code { color: #355c4e; font-size: 13px; font-weight: 700; line-height: 1.6; }
+    code { font-family: "Consolas", "Microsoft YaHei", "PingFang SC", monospace; overflow-wrap: anywhere; }
+    .defaults { margin-top: 9px; color: #7c8c7c; font-size: 10px; line-height: 1.7; }
+    .section { margin-top: 18px; }
+    .section-title { display: flex; align-items: center; gap: 7px; margin: 0 0 9px; color: #526f5f; font-size: 13px; font-weight: 700; }
+    .section-title::before { width: 3px; height: 12px; border-radius: 2px; background: #a68a49; content: ""; }
+    .commands { overflow: hidden; border: 1px solid #e2e8dd; border-radius: 9px; background: #ffffffb8; }
+    .command { display: grid; grid-template-columns: 250px minmax(0, 1fr); align-items: center; column-gap: 12px; padding: 10px 12px; border-bottom: 1px solid #e8ede2; }
+    .command:last-child { border-bottom: 0; }
+    .command code { min-width: 0; color: #355c4e; font-size: 12px; font-weight: 600; line-height: 1.6; }
+    .description { min-width: 0; color: #6e8178; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+    .notes { margin: 0; padding: 11px 14px 11px 29px; border: 1px solid #e2e8dd; border-radius: 9px; background: #f1f4ed; }
+    .notes li { padding-left: 2px; color: #6e8178; font-size: 11px; line-height: 1.8; overflow-wrap: anywhere; }
+    .notes li + li { margin-top: 5px; }
+    .footer { margin-top: 16px; padding-top: 10px; border-top: 1px solid #dce3d7; color: #91a08e; font-size: 9px; line-height: 1.7; text-align: center; }
+    .signature { margin-top: 4px; color: #6e8178; font-size: 10px; font-weight: 600; letter-spacing: .3px; }
+  </style>
+</head>
+<body>
+  <main class="board">
+    <div class="masthead">
+      <svg class="brand-icon" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2 29 16 16 30 3 16Z" stroke="currentColor"/><path d="m16 8 7 8-7 8-7-8Z" fill="currentColor"/><path d="M16 0v32M0 16h32" stroke="currentColor" stroke-width=".6"/></svg>
+      <span class="eyebrow">TEYVAT COMBAT ARCHIVE</span>
+      <span class="edition">原神 · DPS 指令手册</span>
+    </div>
+    <header class="header">
+      <div><h1 class="title">{{title}}</h1><div class="subtitle">{{subtitle}}</div></div>
+      <div class="seal">HELP</div>
+    </header>
+    <div class="usage"><div class="usage-label">指令格式</div><code>{{usage}}</code></div>
+    <div class="defaults">{{defaultsLabel}}</div>
+    {{each sections section}}
+    <section class="section">
+      <h2 class="section-title">{{section.title}}</h2>
+      <div class="commands">
+        {{each section.commands item}}
+        <div class="command"><code>{{item.command}}</code><div class="description">{{item.description}}</div></div>
+        {{/each}}
+      </div>
+    </section>
+    {{/each}}
+    <section class="section">
+      <h2 class="section-title">使用说明</h2>
+      <ul class="notes">{{each notes note}}<li>{{note}}</li>{{/each}}</ul>
+    </section>
+    <footer class="footer">
+      <div>{{footer}}</div>
+      <div class="signature">yuanshen-dps-plugin · 作者 mohen</div>
+    </footer>
+  </main>
+</body>
+</html>
