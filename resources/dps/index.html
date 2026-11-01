@@ -38,6 +38,7 @@
     .stat:first-child .stat-value { color: #a18442; }
     .result-count { color: #6e8178; font-size: 10px; }
     .pagination { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #dce3d7; color: #809086; font-size: 10px; }
+    .pagination.is-hidden { display: none; }
     .list-heading, .row { display: grid; grid-template-columns: 26px minmax(0, 1fr) 88px 58px 57px; align-items: center; column-gap: 6px; }
     .list-heading { padding: 0 8px 8px; border: 1px solid transparent; color: #8c998f; font-size: 10px; }
     .list-heading span:nth-child(n+3) { text-align: center; }
@@ -99,7 +100,7 @@
       <div class="stat"><span class="stat-label">最高成绩</span><span class="stat-value">{{bestDamageLabel}}</span></div>
       <div class="result-count">{{resultSummaryLabel}}</div>
     </section>
-    <div class="pagination"><span>{{rangeLabel}}</span><span>{{pageLabel}}</span></div>
+    <div class="pagination {{paginationClass}}"><span>{{rangeLabel}}</span><span>{{pageLabel}}</span></div>
     <div class="stale">{{staleLabel}}</div>
     <div class="list-heading"><span>排名</span><span>出战阵容 / 命座</span><span>输出DPS</span><span>配置成本</span><div class="status status-heading"><span>宏/绿</span><span>命星</span></div></div>
     <section class="ranking">

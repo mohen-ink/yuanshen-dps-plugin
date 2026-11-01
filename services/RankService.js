@@ -132,17 +132,23 @@ export function buildViewModel ({ rankResult, title, subtitle, meta, stale }) {
     : '未知'
   const bestDamage = rankResult.bestDamage
   const formatCount = n => n.toLocaleString('zh-CN')
+  const singlePage = rankResult.totalPages === 1
+  const resultSummaryLabel = rankResult.deduplicate
+    ? `匹配 ${formatCount(rankResult.matched)} 条成绩 · 去重后 ${formatCount(rankResult.total)} 组`
+    : `共 ${formatCount(rankResult.matched)} 条成绩`
+  const countUnit = rankResult.deduplicate ? '组' : '条'
 
   return {
     title,
     subtitle,
-    resultSummaryLabel: rankResult.deduplicate
-      ? `匹配 ${formatCount(rankResult.matched)} 条成绩 · 去重后 ${formatCount(rankResult.total)} 组`
-      : `匹配 ${formatCount(rankResult.matched)} 条成绩 · 不去重`,
+    resultSummaryLabel: rankResult.total > 0 && singlePage
+      ? `${resultSummaryLabel} · 已全部展示`
+      : `${resultSummaryLabel}${rankResult.deduplicate ? '' : ' · 不去重'}`,
+    paginationClass: singlePage ? 'is-hidden' : '',
     pageLabel: `第 ${rankResult.page} / ${rankResult.totalPages} 页`,
     rangeLabel: rankResult.shown > 0
-      ? `第 ${rankResult.rows[0].rank}–${rankResult.rows.at(-1).rank} 名 · 每页 ${rankResult.pageSize} 条`
-      : `每页 ${rankResult.pageSize} 条`,
+      ? `第 ${rankResult.rows[0].rank}–${rankResult.rows.at(-1).rank} 名 · ${rankResult.shown < rankResult.pageSize ? `本页 ${formatCount(rankResult.shown)} ${countUnit}` : `共 ${formatCount(rankResult.total)} ${countUnit}`}`
+      : '暂无匹配成绩',
     bestDamageLabel: formatDamage(bestDamage),
     fetchedAtLabel,
     staleLabel: stale ? '当前为缓存快照，接口暂时不可用' : '',
