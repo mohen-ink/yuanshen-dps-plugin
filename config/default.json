@@ -1,0 +1,12 @@
+{
+  "endpoint": "https://www.mhydps.cn/api/teams",
+  "allowedHosts": ["www.mhydps.cn"],
+  "requestTimeoutMs": 10000,
+  "cacheTtlSeconds": 3600,
+  "cooldownSeconds": 10,
+  "defaultTopN": 10,
+  "maxTopN": 30,
+  "includeMacroByDefault": false,
+  "userAgent": "Mozilla/5.0",
+  "referer": "https://www.mhydps.cn/"
+}

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>{{title}}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      width: 780px;
+      margin: 0;
+      padding: 28px;
+      background: linear-gradient(135deg, #1a1f3a 0%, #2d1b4e 100%);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+      color: #e8eaf6;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      padding: 24px 26px;
+      backdrop-filter: blur(6px);
+    }
+    .header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      background: linear-gradient(90deg, #ffd54f, #ff8a65);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin: 0;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #b0bec5;
+      margin: 6px 0 0;
+    }
+    .meta {
+      text-align: right;
+      font-size: 12px;
+      color: #90a4ae;
+      line-height: 1.6;
+    }
+    .stale {
+      color: #ffab91;
+      font-weight: 600;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 54px 1fr 130px;
+      gap: 14px;
+      align-items: center;
+      padding: 12px 10px;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .row.top1 { background: linear-gradient(90deg, rgba(255, 213, 79, 0.18), rgba(255, 213, 79, 0.02)); border-color: rgba(255, 213, 79, 0.4); }
+    .row.top2 { background: linear-gradient(90deg, rgba(176, 190, 197, 0.15), rgba(176, 190, 197, 0.02)); border-color: rgba(176, 190, 197, 0.35); }
+    .row.top3 { background: linear-gradient(90deg, rgba(255, 138, 101, 0.15), rgba(255, 138, 101, 0.02)); border-color: rgba(255, 138, 101, 0.35); }
+
+    .rank {
+      font-size: 26px;
+      font-weight: 800;
+      text-align: center;
+      color: #cfd8dc;
+      font-family: "Consolas", monospace;
+    }
+    .top1 .rank { color: #ffd54f; }
+    .top2 .rank { color: #eceff1; }
+    .top3 .rank { color: #ff8a65; }
+
+    .members {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .member {
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 13px;
+      color: #eceff1;
+    }
+    .member.highlight {
+      background: linear-gradient(90deg, #ffb74d, #ff8a65);
+      border-color: #ffd54f;
+      color: #1a1f3a;
+      font-weight: 700;
+    }
+    .member .cons {
+      opacity: 0.75;
+      margin-left: 4px;
+      font-size: 11px;
+    }
+    .badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      font-size: 11px;
+      padding: 1px 8px;
+      border-radius: 4px;
+      background: rgba(129, 212, 250, 0.15);
+      color: #81d4fa;
+      border: 1px solid rgba(129, 212, 250, 0.3);
+    }
+    .badge.tag { background: rgba(206, 147, 216, 0.15); color: #ce93d8; border-color: rgba(206, 147, 216, 0.3); }
+
+    .damage-col {
+      text-align: right;
+    }
+    .damage {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffd54f;
+      font-family: "Consolas", monospace;
+    }
+    .cost {
+      font-size: 12px;
+      color: #90a4ae;
+      margin-top: 2px;
+    }
+    .footer {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #78909c;
+    }
+    .empty {
+      padding: 40px;
+      text-align: center;
+      color: #90a4ae;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div>
+        <h1 class="title">{{title}}</h1>
+        <div class="subtitle">{{subtitle}}</div>
+      </div>
+      <div class="meta">
+        <div>{{totalLabel}}</div>
+        <div>更新于 {{fetchedAtLabel}}</div>
+        <div class="stale">{{staleLabel}}</div>
+      </div>
+    </div>
+
+    {{#rows}}
+    <div class="row {{rowClass}}">
+      <div class="rank">{{rankLabel}}</div>
+      <div>
+        <div class="members">
+          {{#members}}
+          <span class="member {{highlightClass}}">{{name}}<span class="cons">{{consLabel}}</span></span>
+          {{/members}}
+        </div>
+        <div class="badges">
+          {{#badges}}<span class="badge">{{.}}</span>{{/badges}}
+          {{#tags}}<span class="badge tag">{{.}}</span>{{/tags}}
+        </div>
+      </div>
+      <div class="damage-col">
+        <div class="damage">{{damageLabel}}</div>
+        <div class="cost">{{costLabel}}</div>
+      </div>
+    </div>
+    {{/rows}}
+
+    {{^rows}}
+    <div class="empty">没有匹配的记录</div>
+    {{/rows}}
+
+    <div class="footer">
+      <span>{{footer}}</span>
+      <span>插件：yuanshen-dps-plugin v0.1.0</span>
+    </div>
+  </div>
+</body>
+</html>

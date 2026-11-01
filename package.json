@@ -1,0 +1,7 @@
+{
+  "name": "yuanshen-dps-plugin",
+  "version": "0.1.0",
+  "description": "原神 DPS 榜单查询插件（数据源：mhydps.cn）",
+  "type": "module",
+  "private": true
+}
