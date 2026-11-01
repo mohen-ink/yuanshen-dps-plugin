@@ -2,197 +2,136 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{title}}</title>
   <style>
     * { box-sizing: border-box; }
     body {
-      width: 780px;
+      width: 640px;
       margin: 0;
-      padding: 28px;
-      background: linear-gradient(135deg, #1a1f3a 0%, #2d1b4e 100%);
-      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
-      color: #e8eaf6;
+      padding: 16px;
+      color: #253e3d;
+      background: #e9eeea;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
-    .card {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+    .board {
+      overflow: hidden;
+      padding: 20px 16px 16px;
+      border: 1px solid #fff;
       border-radius: 18px;
-      padding: 24px 26px;
-      backdrop-filter: blur(6px);
+      background: radial-gradient(ellipse at 100% 0, #e3eadd 0, transparent 35%), #f9faf5;
+      box-shadow: 0 10px 30px #203e3612;
     }
-    .header {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-      padding-bottom: 14px;
-      margin-bottom: 18px;
-    }
-    .title {
-      font-size: 24px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      background: linear-gradient(90deg, #ffd54f, #ff8a65);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      margin: 0;
-    }
-    .subtitle {
-      font-size: 13px;
-      color: #b0bec5;
-      margin: 6px 0 0;
-    }
-    .meta {
-      text-align: right;
-      font-size: 12px;
-      color: #90a4ae;
-      line-height: 1.6;
-    }
-    .stale {
-      color: #ffab91;
-      font-weight: 600;
-    }
-    .row {
-      display: grid;
-      grid-template-columns: 54px 1fr 130px;
-      gap: 14px;
-      align-items: center;
-      padding: 12px 10px;
-      border-radius: 12px;
-      margin-bottom: 8px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .row.top1 { background: linear-gradient(90deg, rgba(255, 213, 79, 0.18), rgba(255, 213, 79, 0.02)); border-color: rgba(255, 213, 79, 0.4); }
-    .row.top2 { background: linear-gradient(90deg, rgba(176, 190, 197, 0.15), rgba(176, 190, 197, 0.02)); border-color: rgba(176, 190, 197, 0.35); }
-    .row.top3 { background: linear-gradient(90deg, rgba(255, 138, 101, 0.15), rgba(255, 138, 101, 0.02)); border-color: rgba(255, 138, 101, 0.35); }
-
-    .rank {
-      font-size: 26px;
-      font-weight: 800;
-      text-align: center;
-      color: #cfd8dc;
-      font-family: "Consolas", monospace;
-    }
-    .top1 .rank { color: #ffd54f; }
-    .top2 .rank { color: #eceff1; }
-    .top3 .rank { color: #ff8a65; }
-
-    .members {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 6px;
-    }
-    .member {
-      padding: 3px 10px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      font-size: 13px;
-      color: #eceff1;
-    }
-    .member.highlight {
-      background: linear-gradient(90deg, #ffb74d, #ff8a65);
-      border-color: #ffd54f;
-      color: #1a1f3a;
-      font-weight: 700;
-    }
-    .member .cons {
-      opacity: 0.75;
-      margin-left: 4px;
-      font-size: 11px;
-    }
-    .badges {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    .badge {
-      font-size: 11px;
-      padding: 1px 8px;
-      border-radius: 4px;
-      background: rgba(129, 212, 250, 0.15);
-      color: #81d4fa;
-      border: 1px solid rgba(129, 212, 250, 0.3);
-    }
-    .badge.tag { background: rgba(206, 147, 216, 0.15); color: #ce93d8; border-color: rgba(206, 147, 216, 0.3); }
-
-    .damage-col {
-      text-align: right;
-    }
-    .damage {
-      font-size: 20px;
-      font-weight: 700;
-      color: #ffd54f;
-      font-family: "Consolas", monospace;
-    }
-    .cost {
-      font-size: 12px;
-      color: #90a4ae;
-      margin-top: 2px;
-    }
-    .footer {
-      margin-top: 16px;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: #78909c;
-    }
-    .empty {
-      padding: 40px;
-      text-align: center;
-      color: #90a4ae;
-      font-size: 14px;
-    }
+    .masthead { display: flex; align-items: center; gap: 7px; margin-bottom: 12px; }
+    .brand-icon { flex-shrink: 0; width: 18px; height: 18px; color: #9a8146; }
+    .eyebrow { color: #61786d; font-size: 8px; font-weight: 700; letter-spacing: 1.5px; }
+    .edition { margin-left: auto; color: #8a9487; font-size: 9px; }
+    .header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .title { margin: 0; font-size: 27px; font-weight: 800; letter-spacing: 1px; line-height: 1.3; }
+    .subtitle { margin-top: 5px; color: #6e8178; font-size: 11px; line-height: 1.5; }
+    .seal { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 42px; height: 42px; margin-right: 4px; border: 1px solid #b5b996; outline: 1px solid #cbd0b7; outline-offset: 3px; border-radius: 50%; color: #8b794a; font: italic 15px Georgia, serif; }
+    .summary { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 14px 0 0; padding: 10px 0; border-top: 1px solid #dce3d7; }
+    .stat { display: flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+    .stat-label { color: #809086; font-size: 10px; }
+    .stat-value { color: #526f5f; font-family: "Bahnschrift", "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 14px; font-weight: 600; }
+    .stat:first-child .stat-value { color: #a18442; }
+    .result-count { color: #6e8178; font-size: 10px; }
+    .pagination { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #dce3d7; color: #809086; font-size: 10px; }
+    .list-heading, .row { display: grid; grid-template-columns: 26px minmax(0, 1fr) 88px 58px 57px; align-items: center; column-gap: 6px; }
+    .list-heading { padding: 0 8px 8px; border: 1px solid transparent; color: #8c998f; font-size: 10px; }
+    .list-heading span:nth-child(n+3) { text-align: center; }
+    .row { margin-bottom: 5px; padding: 7px 8px; border: 1px solid #e2e8dd; border-radius: 9px; background: #ffffffb8; }
+    .row:last-child { margin-bottom: 0; }
+    .row.top1 { border-color: #d1bc85; background: linear-gradient(105deg, #f4eedc, #fffdf7 65%, #f6f1e4); }
+    .row.top2 { border-color: #c3d1ce; background: linear-gradient(105deg, #edf2ee, #fdfefa 65%); }
+    .row.top3 { border-color: #ddcdbd; background: linear-gradient(105deg, #f3eee7, #fffdfa 65%); }
+    .rank { color: #a7b4a7; font-family: "Bahnschrift", "Segoe UI", sans-serif; font-size: 21px; font-weight: 600; text-align: center; }
+    .top1 .rank { color: #a1823b; }
+    .top2 .rank { color: #728e8b; }
+    .top3 .rank { color: #ae896c; }
+    .members { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; min-width: 0; }
+    .member { min-width: 0; text-align: center; }
+    .portrait { position: relative; width: 42px; height: 42px; margin: 0 auto 4px; border: 1px solid #d5ddd0; border-radius: 9px; background: linear-gradient(145deg, #e4ebde, #d0ddce); }
+    .portrait-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #8da08c; font-size: 19px; font-weight: 600; }
+    .avatar { position: relative; display: block; width: 100%; height: 100%; border-radius: 8px; object-fit: cover; }
+    .cons { position: absolute; right: -3px; bottom: -2px; min-width: 19px; padding: 0 3px; border: 1px solid #fbfcf8; border-radius: 4px; background: #526e61; color: #fff; font-size: 8px; line-height: 13px; white-space: nowrap; }
+    .member-name { overflow: hidden; color: #4b6256; font-size: 9px; line-height: 12px; white-space: nowrap; text-overflow: ellipsis; }
+    .member.highlight .portrait { border-color: #b29a5d; box-shadow: 0 0 0 2px #c4ad7033; }
+    .member.highlight .member-name { color: #9a7b35; font-weight: 700; }
+    .member.highlight .cons { background: #a68a49; }
+    .damage-col { min-width: 0; text-align: center; }
+    .damage { color: #355c4e; font-family: "Bahnschrift", "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 17px; font-weight: 600; white-space: nowrap; }
+    .top1 .damage { color: #a1823b; }
+    .damage-track { height: 2px; margin: 5px 4px 0; overflow: hidden; border-radius: 2px; background: #e8ede2; }
+    .damage-fill { height: 100%; border-radius: inherit; background: #91ad94; }
+    .top1 .damage-fill { background: #bea467; }
+    .cost { color: #7c8c7c; font-size: 10px; line-height: 1.5; text-align: center; white-space: nowrap; }
+    .cost-detail { display: block; font-size: 8px; color: #99a292; white-space: nowrap; }
+    .status { display: grid; grid-template-columns: repeat(2, 27px); align-items: center; justify-items: center; gap: 3px; }
+    .stamp { display: flex; justify-content: center; align-items: center; flex-shrink: 0; width: 27px; height: 27px; border: 2px solid currentColor; border-radius: 50%; font-size: 17px; font-weight: 700; line-height: 1; white-space: nowrap; }
+    .stamp.macro { color: #ed4747; }
+    .stamp.clean { color: #55b71f; }
+    .stamp.lvl { color: #9670c7; font-size: 9px; }
+    .stamp.is-empty { visibility: hidden; }
+    .status-heading { color: #8c998f; font-size: 9px; text-align: center; }
+    .stale { margin-bottom: 10px; padding: 8px 10px; border: 1px solid #dfd2ad; border-radius: 6px; color: #a08447; font-size: 10px; }
+    .stale:empty { display: none; }
+    .empty { padding: 40px 16px; border: 1px dashed #d4ddce; border-radius: 9px; color: #899985; text-align: center; font-size: 13px; }
+    .footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #dce3d7; color: #91a08e; font-size: 9px; line-height: 1.7; }
+    .legend { display: flex; align-items: center; gap: 5px; color: #83917f; font-size: 9px; }
+    .legend .stamp { width: 18px; height: 18px; border-width: 1.5px; font-size: 11px; }
+    .legend .stamp.lvl { font-size: 7px; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="header">
-      <div>
-        <h1 class="title">{{title}}</h1>
-        <div class="subtitle">{{subtitle}}</div>
-      </div>
-      <div class="meta">
-        <div>{{totalLabel}}</div>
-        <div>更新于 {{fetchedAtLabel}}</div>
-        <div class="stale">{{staleLabel}}</div>
-      </div>
+  <main class="board">
+    <div class="masthead">
+      <svg class="brand-icon" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2 29 16 16 30 3 16Z" stroke="currentColor"/><path d="m16 8 7 8-7 8-7-8Z" fill="currentColor"/><path d="M16 0v32M0 16h32" stroke="currentColor" stroke-width=".6"/></svg>
+      <span class="eyebrow">TEYVAT COMBAT ARCHIVE</span>
+      <span class="edition">原神 · 队伍输出档案</span>
     </div>
-
-    {{#rows}}
-    <div class="row {{rowClass}}">
-      <div class="rank">{{rankLabel}}</div>
-      <div>
+    <header class="header">
+      <div><h1 class="title">{{title}}</h1><div class="subtitle">{{subtitle}}</div></div>
+      <div class="seal">DPS</div>
+    </header>
+    <section class="summary">
+      <div class="stat"><span class="stat-label">最高成绩</span><span class="stat-value">{{bestDamageLabel}}</span></div>
+      <div class="result-count">{{resultSummaryLabel}}</div>
+    </section>
+    <div class="pagination"><span>{{rangeLabel}}</span><span>{{pageLabel}}</span></div>
+    <div class="stale">{{staleLabel}}</div>
+    <div class="list-heading"><span>排名</span><span>出战阵容 / 命座</span><span>输出DPS</span><span>配置成本</span><div class="status status-heading"><span>宏/绿</span><span>命星</span></div></div>
+    <section class="ranking">
+      {{#rows}}
+      <article class="row {{rowClass}}">
+        <div class="rank">{{rankLabel}}</div>
         <div class="members">
           {{#members}}
-          <span class="member {{highlightClass}}">{{name}}<span class="cons">{{consLabel}}</span></span>
+          <div class="member {{highlightClass}}" title="{{name}} {{consLabel}}">
+            <div class="portrait">
+              <span class="portrait-fallback">{{initial}}</span>
+              <img class="avatar" src="{{avatarUrl}}" alt="{{name}}" onerror="this.style.visibility='hidden'">
+              <span class="cons">{{consLabel}}</span>
+            </div>
+            <div class="member-name">{{name}}</div>
+          </div>
           {{/members}}
         </div>
-        <div class="badges">
-          {{#badges}}<span class="badge">{{.}}</span>{{/badges}}
-          {{#tags}}<span class="badge tag">{{.}}</span>{{/tags}}
+        <div class="damage-col">
+          <div class="damage">{{damageLabel}}</div>
+          <div class="damage-track"><div class="damage-fill" style="width: {{damagePercent}}%"></div></div>
         </div>
-      </div>
-      <div class="damage-col">
-        <div class="damage">{{damageLabel}}</div>
-        <div class="cost">{{costLabel}}</div>
-      </div>
-    </div>
-    {{/rows}}
-
-    {{^rows}}
-    <div class="empty">没有匹配的记录</div>
-    {{/rows}}
-
-    <div class="footer">
-      <span>{{footer}}</span>
-      <span>插件：yuanshen-dps-plugin v0.1.0</span>
-    </div>
-  </div>
+        <div class="cost" title="{{costLabel}}">{{costMainLabel}}<span class="cost-detail">{{costDetailLabel}}</span></div>
+        <div class="status">{{#statusBadges}}<span class="stamp {{className}} {{visibilityClass}}" title="{{title}}">{{label}}</span>{{/statusBadges}}</div>
+      </article>
+      {{/rows}}
+      {{^rows}}<div class="empty">暂无符合条件的记录，试试调整查询条件</div>{{/rows}}
+    </section>
+    <footer class="footer">
+      <div><div>{{footer}}</div><div>更新 {{fetchedAtLabel}}</div></div>
+      <div class="legend"><span class="stamp macro">宏</span><span>宏</span><span class="stamp clean">绿</span><span>绿玩</span><span class="stamp lvl">命星</span><span>命星 · 无绿标不代表绿玩</span></div>
+    </footer>
+  </main>
 </body>
 </html>

@@ -6,7 +6,7 @@
   "cooldownSeconds": 10,
   "defaultTopN": 10,
   "maxTopN": 30,
-  "includeMacroByDefault": false,
+  "includeMacroByDefault": true,
   "userAgent": "Mozilla/5.0",
   "referer": "https://www.mhydps.cn/"
 }

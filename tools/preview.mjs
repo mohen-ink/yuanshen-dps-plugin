@@ -1,9 +1,12 @@
-// 本地预览生成器：读取快照 JSON，用 RankService 计算，把 mustache 模板渲染成静态 HTML。
-// 仅用于开发预览，不属于插件运行时依赖。
 import fs from 'node:fs/promises'
+import http from 'node:http'
 import path from 'node:path'
+import { parseArgs } from 'node:util'
 import { normalizeList } from '../models/normalize.js'
-import { rank, buildViewModel } from '../services/RankService.js'
+import { buildViewModel } from '../services/RankService.js'
+import { resolveQuery, describeQuery, queryRank } from '../services/QueryService.js'
+import { withCharacterAvatars } from '../components/Render.js'
+import { loadConfig } from '../components/Config.js'
 
 function escapeHtml (s) {
   return String(s ?? '')
@@ -14,12 +17,8 @@ function escapeHtml (s) {
     .replace(/'/g, '&#39;')
 }
 
-// 极简 mustache 子集：{{var}} / {{#list}}...{{/list}} / {{^list}}...{{/list}} / {{.}}
 function render (tpl, ctx) {
-  let out = tpl
-
-  // 先处理 section（循环）
-  out = out.replace(/\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_, key, inner) => {
+  let out = tpl.replace(/\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_, key, inner) => {
     const val = ctx[key]
     if (!Array.isArray(val) || val.length === 0) return ''
     return val.map(item => {
@@ -28,77 +27,99 @@ function render (tpl, ctx) {
     }).join('')
   })
 
-  // inverted section
   out = out.replace(/\{\{\^(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_, key, inner) => {
     const val = ctx[key]
-    if (Array.isArray(val) && val.length > 0) return ''
-    if (!val) return render(inner, ctx)
-    return ''
+    return (!val || (Array.isArray(val) && val.length === 0)) ? render(inner, ctx) : ''
   })
 
-  // 变量
-  out = out.replace(/\{\{(\.|\w+)\}\}/g, (_, key) => {
-    const v = ctx[key]
-    if (v === undefined || v === null) return ''
-    return escapeHtml(v)
-  })
-
-  return out
+  return out.replace(/\{\{(\.|\w+)\}\}/g, (_, key) => escapeHtml(ctx[key]))
 }
 
-function decorateRows (rows) {
-  return rows.map(r => ({
-    ...r,
-    rowClass: r.rank === 1 ? 'top1' : r.rank === 2 ? 'top2' : r.rank === 3 ? 'top3' : '',
-    rankLabel: r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : `#${r.rank}`,
-    members: r.members.map(m => ({ ...m, highlightClass: m.highlight ? 'highlight' : '' }))
-  }))
+const { values } = parseArgs({
+  options: {
+    snapshot: { type: 'string' },
+    'avatar-root': { type: 'string' },
+    port: { type: 'string', default: '4173' }
+  }
+})
+
+if (!values.snapshot || !values['avatar-root']) {
+  throw new Error('用法：node tools/preview.mjs --snapshot <榜单JSON> --avatar-root <角色图片目录> [--port 4173]')
 }
 
-async function buildPreview (snapshotPath, templatePath, outPath, opts, title, subtitleExtra) {
-  const raw = JSON.parse(await fs.readFile(snapshotPath, 'utf8'))
-  const teams = normalizeList(raw)
-  const result = rank(teams, opts)
-
-  const viewModel = buildViewModel({
-    rankResult: { ...result, rows: decorateRows(result.rows) },
-    title,
-    subtitle: subtitleExtra,
-    meta: { fetchedAt: Date.now(), count: teams.length },
-    stale: false
-  })
-
-  const tpl = await fs.readFile(templatePath, 'utf8')
-  const html = render(tpl, viewModel)
-  await fs.mkdir(path.dirname(outPath), { recursive: true })
-  await fs.writeFile(outPath, html, 'utf8')
-  console.log(`[preview] ${title} → ${outPath}  (rows=${result.rows.length}, total=${result.total})`)
+const port = Number(values.port)
+if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('端口必须为 1–65535 的整数')
+const avatarRoot = path.resolve(values['avatar-root'])
+await fs.access(avatarRoot)
+const snapshotPath = path.resolve(values.snapshot)
+const teams = normalizeList(JSON.parse(await fs.readFile(snapshotPath, 'utf8')))
+const meta = { fetchedAt: (await fs.stat(snapshotPath)).mtimeMs, count: teams.length }
+const templateUrl = new URL('../resources/dps/index.html', import.meta.url)
+const cfg = await loadConfig()
+const pages = {
+  '/': '#dps',
+  '/top10.html': '#dps',
+  '/mavuika.html': '#dps 玛薇卡',
+  '/mavuika-c6-main.html': '#dps 玛薇卡 主c 6命',
+  '/clean.html': '#dps 绿玩',
+  '/page2.html': '#dps 第2页',
+  '/raw.html': '#dps 不去重',
+  '/empty.html': '#dps'
 }
 
-const snapshot = 'D:/AgentWorkSpace/mhydps_dps.json'
-const template = new URL('../resources/dps/index.html', import.meta.url)
-const outDir = 'D:/AgentWorkSpace/tmp/mhydps-preview'
+const server = http.createServer(async (req, res) => {
+  try {
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      res.writeHead(405, { Allow: 'GET, HEAD' }).end()
+      return
+    }
+    const url = new URL(req.url, `http://127.0.0.1:${port}`)
+    const pathname = url.pathname
+    if (pathname.startsWith('/avatars/')) {
+      const match = /^\/avatars\/([^/]+)\/imgs\/face\.webp$/.exec(pathname)
+      const name = match ? decodeURIComponent(match[1]) : ''
+      if (!name || name === '.' || name === '..' || /[\\/:\x00-\x1f]/.test(name)) {
+        res.writeHead(404).end()
+        return
+      }
+      const image = await fs.readFile(path.join(avatarRoot, name, 'imgs', 'face.webp'))
+      res.writeHead(200, { 'Content-Type': 'image/webp', 'Cache-Control': 'no-store' })
+      res.end(req.method === 'HEAD' ? undefined : image)
+      return
+    }
+    if (!Object.hasOwn(pages, pathname)) {
+      res.writeHead(404).end()
+      return
+    }
+    let opts
+    let rankResult
+    try {
+      opts = resolveQuery(url.searchParams.get('q') ?? pages[pathname], cfg)
+      rankResult = pathname === '/empty.html' && !url.searchParams.has('q')
+        ? queryRank([], resolveQuery('#dps', cfg))
+        : queryRank(teams, opts)
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }).end(err.message)
+      return
+    }
+    const template = await fs.readFile(templateUrl, 'utf8')
+    const viewModel = withCharacterAvatars(buildViewModel({ rankResult, ...describeQuery(opts), meta, stale: false }), '/avatars/')
+    const html = render(template, viewModel)
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' })
+    res.end(req.method === 'HEAD' ? undefined : html)
+  } catch (err) {
+    const status = err.code === 'ENOENT' ? 404 : err instanceof URIError ? 400 : 500
+    if (status === 500) console.error(err)
+    res.writeHead(status, { 'Content-Type': 'text/plain; charset=utf-8' }).end(status === 404 ? 'Not found' : 'Preview error')
+  }
+})
 
-await buildPreview(snapshot, template, path.join(outDir, 'top10.html'),
-  { topN: 10, includeMacro: false },
-  '原神 DPS 榜',
-  '默认榜单 · 已排除宏'
-)
-
-await buildPreview(snapshot, template, path.join(outDir, 'mavuika.html'),
-  { character: '玛薇卡', topN: 10, includeMacro: false },
-  'DPS · 玛薇卡',
-  '含：玛薇卡 · 已排除宏'
-)
-
-await buildPreview(snapshot, template, path.join(outDir, 'mavuika-c6-main.html'),
-  { character: '玛薇卡', mainCarry: true, constellation: { op: 'eq', value: 6 }, topN: 10, includeMacro: false },
-  '主C · 玛薇卡',
-  '主C：玛薇卡 · 6 命 · 已排除宏'
-)
-
-await buildPreview(snapshot, template, path.join(outDir, 'clean.html'),
-  { cleanOnly: true, topN: 10, includeMacro: false },
-  '绿玩 DPS 榜',
-  '仅绿玩 · 已排除宏'
-)
+server.on('error', err => {
+  console.error(`预览服务器启动失败：${err.message}`)
+  process.exitCode = 1
+})
+server.listen(port, '127.0.0.1', () => {
+  console.log(`预览地址：http://127.0.0.1:${port}`)
+  console.log('页面：/top10.html /mavuika.html /mavuika-c6-main.html /clean.html /empty.html')
+  console.log('图片仅由启动参数指定的目录提供，不复制到插件。修改模板后刷新即可。')
+})

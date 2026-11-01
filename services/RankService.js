@@ -1,7 +1,3 @@
-/**
- * 纯函数：筛选、排序、生成 view-model。不依赖 e、Redis、Bot。
- */
-
 export function formatDamage (n) {
   if (!Number.isFinite(n) || n <= 0) return '0'
   if (n >= 1e8) return `${(n / 1e8).toFixed(2)} 亿`
@@ -27,30 +23,30 @@ function matchesConstellation (member, requirement) {
   return true
 }
 
-/**
- * @param {Array} teams 归一化后的记录数组（已按 damage 降序）
- * @param {Object} opts
- * @param {string} [opts.character]     角色名（精确匹配）
- * @param {boolean} [opts.mainCarry]    仅统计 members[0]
- * @param {{op:'eq'|'gte'|'lte', value:number}} [opts.constellation]
- * @param {boolean} [opts.includeMacro] 是否包含"宏"标签
- * @param {boolean} [opts.cleanOnly]
- * @param {boolean} [opts.lvlOnly]
- * @param {number} [opts.topN]
- */
+export function teamKey (team) {
+  return JSON.stringify(team.members.map(member => [member.charId, member.constellation]).sort((a, b) => {
+    return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] - b[1]
+  }))
+}
+
 export function rank (teams, opts = {}) {
   const {
     character = '',
     mainCarry = false,
     constellation = null,
-    includeMacro = false,
+    includeMacro = true,
+    macroMode = includeMacro ? 'all' : 'exclude',
     cleanOnly = false,
     lvlOnly = false,
-    topN = 10
+    deduplicate = false,
+    topN = 10,
+    page = 1
   } = opts
 
   const filtered = teams.filter(team => {
-    if (!includeMacro && (team.tags || []).includes('宏')) return false
+    const macro = team.tags.includes('宏')
+    if (macroMode === 'exclude' && macro) return false
+    if (macroMode === 'only' && !macro) return false
     if (cleanOnly && team.clean !== true) return false
     if (lvlOnly && team.lvl !== true) return false
 
@@ -67,30 +63,65 @@ export function rank (teams, opts = {}) {
     return true
   })
 
-  const limited = filtered.slice(0, Math.max(1, topN))
+  let ranked = filtered
+  if (deduplicate) {
+    const bestByTeam = new Map()
+    for (const team of filtered) {
+      const key = teamKey(team)
+      const previous = bestByTeam.get(key)
+      if (!previous || team.damage > previous.damage) bestByTeam.set(key, team)
+    }
+    ranked = [...bestByTeam.values()]
+  }
+  ranked = ranked.slice().sort((a, b) => b.damage - a.damage)
 
-  const rows = limited.map((team, idx) => ({
-    rank: idx + 1,
-    damageLabel: formatDamage(team.damage),
-    damageRaw: team.damage,
-    costLabel: formatCost(team.cost, team.limitcost, team.normalcost),
-    badges: [
-      team.clean ? '绿玩' : null,
-      team.lvl ? '命星' : null
-    ].filter(Boolean),
-    tags: team.tags.slice(),
-    members: team.members.map(m => ({
-      name: m.charId,
-      consLabel: `${m.constellation} 命`,
-      highlight: !!character && m.charId === character
-    })),
-    videoUrl: team.video_url || '',
-    info: team.info || ''
-  }))
+  const pageSize = Number.isSafeInteger(topN) && topN > 0 ? topN : 10
+  const currentPage = Number.isSafeInteger(page) && page > 0 ? page : 1
+  const totalPages = Math.max(1, Math.ceil(ranked.length / pageSize))
+  const start = (currentPage - 1) * pageSize
+  const limited = ranked.slice(start, start + pageSize)
+
+  const rows = limited.map((team, idx) => {
+    const macro = team.tags.includes('宏')
+    return {
+      rank: start + idx + 1,
+      damageLabel: formatDamage(team.damage),
+      damageRaw: team.damage,
+      costLabel: formatCost(team.cost, team.limitcost, team.normalcost),
+      costMainLabel: `${team.cost > 0 ? team.cost : 0} 金`,
+      costDetailLabel: [
+        team.limitcost > 0 && team.limitcost !== team.cost ? `限 ${team.limitcost}` : null,
+        team.normalcost > 0 ? `常 ${team.normalcost}` : null
+      ].filter(Boolean).join(' / '),
+      statusBadges: [
+        {
+          className: macro ? 'macro' : 'clean',
+          label: macro ? '宏' : '绿',
+          title: macro ? '宏' : '绿玩',
+          visibilityClass: macro || team.clean ? '' : 'is-empty'
+        },
+        { className: 'lvl', label: '命星', title: '命星', visibilityClass: team.lvl ? '' : 'is-empty' }
+      ],
+      tags: team.tags.slice(),
+      members: team.members.map(m => ({
+        name: m.charId,
+        consLabel: `${m.constellation}命`,
+        highlight: !!character && m.charId === character
+      })),
+      videoUrl: team.video_url || '',
+      info: team.info || ''
+    }
+  })
 
   return {
-    total: filtered.length,
+    matched: filtered.length,
+    total: ranked.length,
     shown: rows.length,
+    page: currentPage,
+    pageSize,
+    totalPages,
+    deduplicate,
+    bestDamage: ranked[0]?.damage || 0,
     rows
   }
 }
@@ -99,14 +130,33 @@ export function buildViewModel ({ rankResult, title, subtitle, meta, stale }) {
   const fetchedAtLabel = meta && meta.fetchedAt
     ? new Date(meta.fetchedAt).toLocaleString('zh-CN', { hour12: false })
     : '未知'
+  const bestDamage = rankResult.bestDamage
+  const formatCount = n => n.toLocaleString('zh-CN')
 
   return {
     title,
     subtitle,
-    totalLabel: `共 ${rankResult.total} 条，展示前 ${rankResult.shown} 条`,
+    resultSummaryLabel: rankResult.deduplicate
+      ? `匹配 ${formatCount(rankResult.matched)} 条成绩 · 去重后 ${formatCount(rankResult.total)} 组`
+      : `匹配 ${formatCount(rankResult.matched)} 条成绩 · 不去重`,
+    pageLabel: `第 ${rankResult.page} / ${rankResult.totalPages} 页`,
+    rangeLabel: rankResult.shown > 0
+      ? `第 ${rankResult.rows[0].rank}–${rankResult.rows.at(-1).rank} 名 · 每页 ${rankResult.pageSize} 条`
+      : `每页 ${rankResult.pageSize} 条`,
+    bestDamageLabel: formatDamage(bestDamage),
     fetchedAtLabel,
-    staleLabel: stale ? '⚠ 当前为缓存快照，接口暂时不可用' : '',
-    rows: rankResult.rows,
+    staleLabel: stale ? '当前为缓存快照，接口暂时不可用' : '',
+    rows: rankResult.rows.map(row => ({
+      ...row,
+      rowClass: row.rank <= 3 ? `top${row.rank}` : '',
+      rankLabel: String(row.rank).padStart(2, '0'),
+      damagePercent: bestDamage > 0 ? Math.max(0, Math.min(100, row.damageRaw / bestDamage * 100)).toFixed(1) : '0',
+      members: row.members.map(member => ({
+        ...member,
+        initial: Array.from(member.name)[0] || '?',
+        highlightClass: member.highlight ? 'highlight' : ''
+      }))
+    })),
     footer: '数据来源：mhydps.cn · 仅供参考'
   }
 }
