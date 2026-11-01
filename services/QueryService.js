@@ -1,4 +1,5 @@
 import { rank } from './RankService.js'
+import { normalizeCharacterAlias } from './CharacterService.js'
 
 const SAFE_NAME_RE = /^(?=.*\p{L})[\p{L}\p{N}·]{1,20}$/u
 
@@ -17,6 +18,7 @@ export function buildHelpViewModel (cfg) {
         commands: [
           { command: '#dps', description: '查看全角色队伍榜单' },
           { command: '#dps 玛薇卡', description: '查看包含该角色的队伍' },
+          { command: '#dps 散兵', description: '支持喵喵别名，自动识别为流浪者' },
           { command: '#dps 玛薇卡 主c 6命', description: '该角色为主C，且恰好6命' },
           { command: '#dps 玛薇卡 >=2命', description: '该角色至少2命，也支持 ≥' },
           { command: '#dps 玛薇卡 <=2命 无宏', description: '该角色至多2命，并排除宏' },
@@ -36,7 +38,9 @@ export function buildHelpViewModel (cfg) {
     notes: [
       '筛选支持：绿玩 / 无宏 / 仅宏 / 命星，可组合使用，参数顺序不限。',
       '去重按同四人及各自命座合并，忽略顺序；也支持显式「不去重」。',
-      '角色请使用完整名称；主C按队伍首位角色判断。',
+      '支持完整角色名和喵喵角色别名，英文别名忽略大小写；共用别名请改用完整名称。',
+      '纯数字别名优先识别角色，如77代表七七；数量建议写「10条」，旧用法可用「#dps榜 10」。',
+      '主C按队伍首位角色判断。',
       '每页条数为展示上限，数据不足时只显示实际条数。',
       '红圈宏 / 绿圈绿共用一列，紫圈命星独立显示；无绿标不代表绿玩。',
       '兼容：#dps榜 [N]、#dps主c 角色、#dps绿玩 [角色]、#dps全部'
@@ -57,7 +61,7 @@ export function buildHelpText (cfg) {
   ].join('\n')
 }
 
-export function parseQuery (msg) {
+export function parseQuery (msg, characterAliases = new Map()) {
   const match = /^#dps(榜|主c|绿玩|全部)?(?=\s|$)\s*([\s\S]*)$/i.exec(String(msg || '').trim())
   if (!match) throw new Error('指令格式错误，请发送 #dps帮助 查看用法。')
   const alias = (match[1] || '').toLowerCase()
@@ -73,6 +77,7 @@ export function parseQuery (msg) {
     page: null
   }
   let deduplicateMode = null
+  const characterTokens = []
 
   function setMacroMode (mode) {
     if (opts.macroMode && opts.macroMode !== mode) throw new Error('宏筛选条件冲突，请只选择「全部」「无宏」或「仅宏」之一。')
@@ -113,15 +118,30 @@ export function parseQuery (msg) {
     }
 
     const count = /^(\d+)条?$/.exec(token)
-    if (count) { setNumber('topN', Number(count[1]), '每页条数'); continue }
+    if (count && (token.endsWith('条') || alias === '榜' || !characterAliases.has(normalizeCharacterAlias(token)))) {
+      setNumber('topN', Number(count[1]), '每页条数')
+      continue
+    }
     const page = /^第(\d+)页$/.exec(token)
     if (page) { setNumber('page', Number(page[1]), '页码'); continue }
+    characterTokens.push(token)
+  }
 
-    if (/(?:命|条|页)$|^[<>=≥≤+\-\d]/.test(token) || !SAFE_NAME_RE.test(token)) {
-      throw new Error(`无法识别参数「${token}」。示例：#dps 玛薇卡 主c <=2命 无宏 20条 第2页`)
+  const characterName = characterTokens.join(' ')
+  const candidates = characterAliases.get(normalizeCharacterAlias(characterName))
+  if (candidates?.size) {
+    if (candidates.size > 1) {
+      throw new Error(`角色别名「${characterName}」对应多个角色：${[...candidates].join('、')}，请使用完整角色名。`)
     }
-    if (opts.character) throw new Error(`无法识别多余参数「${token}」；目前一次只能查询一个角色。`)
-    opts.character = token
+    opts.character = candidates.values().next().value
+  } else {
+    for (const token of characterTokens) {
+      if (/(?:命|条|页)$|^[<>=≥≤+\-\d]/.test(token) || !SAFE_NAME_RE.test(token)) {
+        throw new Error(`无法识别参数「${token}」。示例：#dps 玛薇卡 主c <=2命 无宏 20条 第2页`)
+      }
+      if (opts.character) throw new Error(`无法识别多余参数「${token}」；目前一次只能查询一个角色。`)
+      opts.character = token
+    }
   }
 
   if (opts.cleanOnly && opts.macroMode === 'only') throw new Error('「绿玩」和「仅宏」不能同时使用。')
@@ -129,8 +149,8 @@ export function parseQuery (msg) {
   return opts
 }
 
-export function resolveQuery (msg, cfg) {
-  const opts = parseQuery(msg)
+export function resolveQuery (msg, cfg, characterAliases) {
+  const opts = parseQuery(msg, characterAliases)
   const topN = opts.topN ?? cfg.defaultTopN
   if (topN > cfg.maxTopN) throw new Error(`单页最多展示${cfg.maxTopN}条，请减少条数或使用「第2页」。`)
   return {
@@ -158,7 +178,7 @@ export function describeQuery (opts) {
 
 export function queryRank (teams, opts) {
   if (opts.character && !teams.some(team => team.members.some(member => member.charId === opts.character))) {
-    throw new Error(`未找到角色「${opts.character}」的记录，请使用接口中的完整角色名。`)
+    throw new Error(`未找到角色「${opts.character}」的记录，请检查角色名称或别名。`)
   }
   const result = rank(teams, opts)
   if (result.total > 0 && result.page > result.totalPages) {

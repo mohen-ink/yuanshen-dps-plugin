@@ -4,6 +4,7 @@ import { buildViewModel } from '../services/RankService.js'
 import { QUERY_RULE, buildHelpViewModel, resolveQuery, describeQuery, queryRank } from '../services/QueryService.js'
 import { renderRankImage, renderHelpImage } from '../components/Render.js'
 import { loadConfig } from '../components/Config.js'
+import { loadCharacterAliases } from '../services/CharacterService.js'
 
 export default class Dps extends plugin {
   constructor () {
@@ -51,7 +52,8 @@ export default class Dps extends plugin {
     const cfg = await loadConfig()
     let opts
     try {
-      opts = resolveQuery(e.msg, cfg)
+      const characterAliases = await loadCharacterAliases()
+      opts = resolveQuery(e.msg, cfg, characterAliases)
     } catch (err) {
       await e.reply(`${err.message}\n发送 #dps帮助 查看用法。`)
       return true

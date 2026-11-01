@@ -8,6 +8,7 @@ import { buildViewModel } from '../services/RankService.js'
 import { resolveQuery, describeQuery, queryRank } from '../services/QueryService.js'
 import { withCharacterAvatars } from '../components/Render.js'
 import { loadConfig } from '../components/Config.js'
+import { loadCharacterAliases } from '../services/CharacterService.js'
 
 const { values } = parseArgs({
   options: {
@@ -68,9 +69,10 @@ const server = http.createServer(async (req, res) => {
     let opts
     let rankResult
     try {
-      opts = resolveQuery(url.searchParams.get('q') ?? pages[pathname], cfg)
+      const characterAliases = await loadCharacterAliases()
+      opts = resolveQuery(url.searchParams.get('q') ?? pages[pathname], cfg, characterAliases)
       rankResult = pathname === '/empty.html' && !url.searchParams.has('q')
-        ? queryRank([], resolveQuery('#dps', cfg))
+        ? queryRank([], resolveQuery('#dps', cfg, characterAliases))
         : queryRank(teams, opts)
     } catch (err) {
       res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' }).end(err.message)
